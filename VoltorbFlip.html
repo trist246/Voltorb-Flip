@@ -1,0 +1,412 @@
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<style>
+canvas {
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    background-color: #FFFFFF;
+}
+</style>
+</head>
+<body onload="startGame()">
+<p id="demo"></p>
+<canvas id="GameScreen"></canvas>
+<canvas id="TilePics" width = "768" height = "876"></canvas>
+<canvas id="background" width = "768" height = "840"></canvas>
+<canvas id="text" width = "768" height = "855"></canvas>
+<canvas id ="padding" width="768" height="100"></canvas>
+<script type="text/javascript" src="VoltorbDrawing.js"></script>
+<script type="text/javascript" src="VoltorbMath.js"></script>
+<script type="text/javascript" src="Text.js"></script>
+<script type="text/javascript" src="PrintText.js"></script>
+<script>
+
+    function startGame() {
+        window.addEventListener("keydown", function (e) {
+            if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Tab"].indexOf(e.code) > -1) {
+                e.preventDefault();
+            }
+        }, false);
+        tilePics = document.getElementById("TilePics");
+        itx = tilePics.getContext("2d");
+        bg = document.getElementById("background");
+        btx = bg.getContext("2d");
+        ttc = document.getElementById("text");
+        ttx = ttc.getContext("2d");
+        drawText();
+        drawTiles();
+        tilePics.style.width = 0;
+        tilePics.style.height = 0;
+        tilePics.style.visibility = 'hidden';
+        bg.style.width = 0;
+        bg.style.height = 0;
+        bg.style.visibility = 'hidden';
+        ttc.style.width = 0;
+        ttc.style.height = 0;
+        ttc.style.visibility = 'hidden';
+        document.getElementById("padding").style.visibility = 'hidden';
+        defineGameScreen();
+        gameScreen.start();
+        gtx = gameScreen.context;
+        window.addEventListener("keydown", keyPressed);
+    
+        tileSetup();
+        requestAnimationFrame(drawScreen);
+    }
+
+    function drawScreen() {
+        gameScreen.clear();
+        //requestAnimationFrame(drawScreen);
+        gtx.drawImage(bg, 0, 0, 768, 840, 0, 0, 768, 840);
+        if (noting == false) gtx.drawImage(tilePics, 312, 180, 84, 39, 630, 39, 84, 39);
+        else {
+            gtx.drawImage(tilePics, 312, 219, 99, 39, 621, 39, 99, 39);
+            gtx.drawImage(tilePics, 0, 99, 162, 162, 591, 150, 162, 162);
+            if (selRow >= 0 && selSpot >= 0 && Rows[selRow][selSpot].selected == true && Rows[selRow][selSpot].revealed == false) {
+                if (Rows[selRow][selSpot].noteV == true) gtx.drawImage(tilePics, 165, 108, 72, 72, 600, 159, 72, 72);
+                if (Rows[selRow][selSpot].note1 == true) gtx.drawImage(tilePics, 237, 108, 72, 72, 672, 159, 72, 72);
+                if (Rows[selRow][selSpot].note2 == true) gtx.drawImage(tilePics, 165, 180, 72, 72, 600, 231, 72, 72);
+                if (Rows[selRow][selSpot].note3 == true) gtx.drawImage(tilePics, 237, 180, 72, 72, 672, 231, 72, 72);
+            }
+        }
+        for (let i = 0; i < 25; i++) {Tiles[i].draw()};
+        for (let i = 0; i < 5; i++) {Rows[i].draw(); Cols[i].draw()};
+    
+        if (inText == true) {
+            if (textId < 4) {
+                gtx.drawImage(tilePics, 3, 495, 762, 45, 3, 483, 762, 45);
+                gtx.drawImage(tilePics, 3, 594, 762, 45, 3, 528, 762, 45);
+            }
+            else {
+                gtx.globalAlpha = 0.5;
+                gtx.fillStyle="#000000";
+                gtx.fillRect(0, 0, 768, 840);
+                gtx.globalAlpha = 1.0;
+                gtx.drawImage(tilePics, 3, 495, 762, 144, 3, 432, 762, 144);
+            }
+            if (textId == 1) {
+                gtx.drawImage(ttc, 0, 135, 360, 45, 48, 504, 360, 45);
+                gtx.drawImage(ttc, 18 * Rows[selRow][selSpot].val, 90, 18, 45, 48, 504, 18, 45);
+                gtx.drawImage(ttc, 18 * Rows[selRow][selSpot].val, 90, 18, 45, 243, 504, 18, 45);
+            }
+            else if (textId == 2) {
+                gtx.drawImage(ttc, 0, 180, 201, 45, 48, 504, 201, 45);
+                gtx.drawImage(ttc, 225, 180, 99, 45, 273 + 18 * curCoin.toString().length, 504, 99, 45);
+                gtx.drawImage(ttc, 18 * Rows[selRow][selSpot].val, 90, 18, 45, 66, 504, 18, 45);
+                for (let i = 0; i < curCoin.toString().length; i++) {gtx.drawImage(ttc, 18 * curCoin.toString()[i], 90, 18, 45, 261 + 18 * i, 504, 18, 45)};
+            }
+            else if (textId == 3) gtx.drawImage(ttc, 0, 225, 375, 45, 48, 504, 375, 45);
+            else if (textId == 4) {
+                gtx.drawImage(ttc, 0, 270, 366, 45, 48, 456, 366, 45);
+                gtx.drawImage(ttc, 18 + 18 * level, 90, 18, 45, 381, 456, 18, 45);
+            }
+            else if (textId == 5) {
+                gtx.drawImage(ttc, 0, 315, 375, 45, 48, 456, 375, 45);
+                gtx.drawImage(ttc, 18 + 18 * level, 90, 18, 45, 390, 456, 18, 45);
+            }
+            else if (textId == 6) printText("Game clear!"); //gtx.drawImage(ttc, 0, 360, 186, 45, 48, 456, 186, 45);
+            else if (textId == 7) printText("You've found all of the hidden x2 and#x3 cards."); /*{
+                gtx.drawImage(ttc, 0, 405, 594, 45, 48, 456, 594, 45);
+                gtx.drawImage(ttc, 0, 450, 153, 45, 48, 504, 153, 45);
+            }
+            */
+            else if (textId == 8) printText("This means you've found all the Coins#in this game, so the game is now over."); /*{
+                gtx.drawImage(ttc, 0, 495, 594, 45, 48, 456, 594, 45);
+                gtx.drawImage(ttc, 0, 540, 603, 45, 48, 504, 603, 45);
+            }
+            */
+            else if (textId == 9) {
+                gtx.drawImage(ttc, 0, 585, 201, 45, 48, 456, 201, 45);
+                gtx.drawImage(ttc, 243, 585, 135, 45, 273 + 18 * curCoin.toString().length, 456, 135, 45);
+                for (let i = 0; i < curCoin.toString().length; i++) {gtx.drawImage(ttc, 18 * curCoin.toString()[i], 90, 18, 45, 261 + 18 * i, 456, 18, 45)};
+            }
+            else if (textId == 10) {
+                gtx.drawImage(ttc, 0, 630, 387, 45, 48, 456, 387, 45);
+                gtx.drawImage(ttc, 18 + 18 * level, 90, 18, 45, 399, 456, 18, 45);
+            }
+            else if (textId == 11) gtx.drawImage(ttc, 0, 675, 291, 45, 48, 456, 291, 45);
+            else if (textId == 12) {
+                gtx.drawImage(ttc, 0, 720, 510, 45, 48, 456, 510, 45);
+                gtx.drawImage(ttc, 0, 765, 279, 45, 48, 504, 279, 45);
+            }
+        }
+        gtx.drawImage(tilePics, 15, 756, 738, 114, 15, 591, 738, 114);
+        gtx.drawImage(tilePics, 174, 261, 282, 93, 117, 600, 282, 93);
+        gtx.drawImage(tilePics, 15, 756, 738, 114, 15, 711, 738, 114);
+        gtx.drawImage(tilePics, 498, 261, 243, 93, 135, 720, 243, 93);
+        for (let i = 0; i < 5; i++) gtx.drawImage(tilePics, 0 + 48 * curCoin.toLocaleString('en-US', {minimumIntegerDigits: 5, useGrouping: false })[i], 400, 48, 72, 498 + 48 * i, 612, 48, 72);
+        for (let i = 0; i < 5; i++) gtx.drawImage(tilePics, 0 + 48 * colCoin.toLocaleString('en-US', {minimumIntegerDigits: 5, useGrouping: false })[i], 400, 48, 72, 498 + 48 * i, 732, 48, 72);
+    }
+
+    var clickX;
+    var clickY;
+    var gameScreen;
+
+    function defineGameScreen() {
+        gameScreen = document.getElementById("GameScreen");
+        gameScreen.start = function() {
+            gameScreen.width = 768;
+            gameScreen.height = 840;
+            //document.body.insertBefore(gameScreen, document.body.childNodes[0]);
+            gameScreen.addEventListener("click", userClick);
+            gameScreen.context = gameScreen.getContext("2d");
+        }
+        gameScreen.clear = function() {
+            gameScreen.context.clearRect(0, 0, gameScreen.width, gameScreen.height);
+        }
+    }
+
+    function keyPressed() {
+        key = event.keyCode;
+        if (canInput == true) {
+            if (key == 32) keySpace();
+            else if (inText == false) {
+                if (key == 87 || key == 38) keyUp();
+                else if (key == 83 || key == 40) keyDown();
+                else if (key == 65 || key == 37) keyLeft();
+                else if (key == 68 || key == 39) keyRight();
+                else if (key == 82 || key == 16 || key == 9) keyNote();
+                else if (key == 49 || key == 50 || key == 51) keyNum(key);
+            }
+        }
+    }
+
+    function keyUp() {
+        if (selRow >= 0 && selSpot >= 0 && Rows[selRow][selSpot].selected == true) {
+            Rows[selRow][selSpot].selected = false;
+            if (selRow > 0) selRow--;
+        }
+        else {
+            selRow = 0;
+            selSpot = 0;
+        }
+        Rows[selRow][selSpot].selected = true;
+        requestAnimationFrame(drawScreen);
+    }
+
+    function keyDown() {
+        if (selRow >= 0 && selSpot >= 0 && Rows[selRow][selSpot].selected == true) {
+            Rows[selRow][selSpot].selected = false;
+            if (selRow < 4) selRow++;
+        }
+        else {
+            selRow = 0;
+            selSpot = 0;
+        }
+        Rows[selRow][selSpot].selected = true;
+        requestAnimationFrame(drawScreen);
+    }
+
+    function keyLeft() {
+        if (selRow >= 0 && selSpot >= 0 && Rows[selRow][selSpot].selected == true) {
+            Rows[selRow][selSpot].selected = false;
+            if (selSpot > 0) selSpot--;
+        }
+        else {
+            selRow = 0;
+            selSpot = 0;
+        }
+        Rows[selRow][selSpot].selected = true;
+        requestAnimationFrame(drawScreen);
+    }
+
+    function keyRight() {
+        if (selRow >= 0 && selSpot >= 0 && Rows[selRow][selSpot].selected == true) {
+            Rows[selRow][selSpot].selected = false;
+            if (selSpot < 4) selSpot++;
+        }
+        else {
+            selRow = 0;
+            selSpot = 0;
+        }
+        Rows[selRow][selSpot].selected = true;
+        requestAnimationFrame(drawScreen);
+    }
+
+    function keyNote() {
+        if (noting == true) noting = false;
+        else noting = true;
+        requestAnimationFrame(drawScreen);
+    }
+
+    function keyNum(numkey) {
+        if (noting == true) {
+            if (numkey == 49) {
+                if (Rows[selRow][selSpot].note1 == false) Rows[selRow][selSpot].note1 = true;
+                else Rows[selRow][selSpot].note1 = false;
+            }
+            else if (numkey == 50) {
+                if (Rows[selRow][selSpot].note2 == false) Rows[selRow][selSpot].note2 = true;
+                else Rows[selRow][selSpot].note2 = false;
+            }
+            else {
+                if (Rows[selRow][selSpot].note3 == false) Rows[selRow][selSpot].note3 = true;
+                else Rows[selRow][selSpot].note3 = false;
+            }
+            requestAnimationFrame(drawScreen);
+        }
+    }
+
+    function keySpace() {
+        if (inText) progText();
+        else {
+            if (noting == false) {
+                if (Rows[selRow][selSpot].selected == true) {
+                    if (Rows[selRow][selSpot].revealed == false) {
+                        canInput = false;
+                        if (firstFlip == true) waitTime = 75;
+                        else waitTime = 25;
+                        requestAnimationFrame(Rows[selRow][selSpot].revealFlip);
+                        setTimeout(function () { selectedOutcome(); }, 5 * waitTime);
+                    }
+                }
+            }
+            else {
+                if (Rows[selRow][selSpot].noteV == false) Rows[selRow][selSpot].noteV = true;
+                else Rows[selRow][selSpot].noteV = false;
+                requestAnimationFrame(drawScreen);
+            }
+        }
+    }
+
+    function progText() {
+        if (gameWon == false && textId < 3 && textId > 0) {
+            textId = 0;
+            inText = false;
+            requestAnimationFrame(drawScreen);
+        }
+        else if (gameWon == true) {
+            textId = 6;
+            gameWon = false;
+        }
+        else if (textId == 3) {
+            if (levelChange == true) {
+                textId = 4;
+                levelChange = false;
+            }
+            else textId = 5;
+            inText = false;
+            canInput = false;
+            curCoin = 0;
+            Rows[selRow][selSpot].selected = false;
+            setTimeout(function () { resetTiles(); }, 500);
+        }
+        else if (textId == 4 || textId == 5 || textId == 12) {
+            textId = 0;
+            inText = false;
+            clearInterval(bounceInterval);
+            requestAnimationFrame(function () { gtx.drawImage(tilePics, 726, 576, 21, 24, 726, 513 + bounceOffput, 21, 24); });
+            bounceOffput = 0;
+            bounceDown = true;
+            levelStart();
+        }
+        else if (textId == 6 || textId == 7 || textId == 8) {
+            if (textId == 8) colCoin += curCoin;
+            textId += 1;
+            clearInterval(bounceInterval);
+            requestAnimationFrame(function () { gtx.drawImage(tilePics, 726, 576, 21, 24, 726, 513 + bounceOffput, 21, 24); });
+            bounceOffput = 0;
+            bounceDown = true;
+        }
+        else if (textId == 9) {
+            if (levelChange == true) {
+                textId = 10;
+                levelChange = false;
+            }
+            else textId = 5;
+            inText = false;
+            canInput = false;
+            clearInterval(bounceInterval);
+            requestAnimationFrame(function () { gtx.drawImage(tilePics, 726, 576, 21, 24, 726, 513 + bounceOffput, 21, 24); });
+            bounceOffput = 0;
+            bounceDown = true;
+            curCoin = 0;
+            Rows[selRow][selSpot].selected = false;
+            setTimeout(function () { resetTiles(); }, 500);
+        }
+        else if (textId == 10 || textId == 11) {
+            textId += 1;
+            clearInterval(bounceInterval);
+            requestAnimationFrame(function () { gtx.drawImage(tilePics, 726, 576, 21, 24, 726, 513 + bounceOffput, 21, 24); });
+            bounceOffput = 0;
+            bounceDown = true;
+        }
+        requestAnimationFrame(drawScreen);
+    }
+
+    function userClick() {
+        clickX = event.pageX - gameScreen.offsetLeft;
+        clickY = event.pageY - gameScreen.offsetTop;
+        if (canInput == true) {
+            if (inText == true) {
+                progText();
+            }
+            else {
+                if (clickX >= 591 && clickX < 753 && clickY >= 18 && clickY < 141) {
+                    if (noting == true) noting = false;
+                    else noting = true;
+                    requestAnimationFrame(drawScreen);
+                }
+                else if (clickX >= 600 && clickX < 744 && clickY >= 159 && clickY < 303 && Rows[selRow][selSpot].selected == true && noting == true) {
+                    if (Rows[selRow][selSpot].revealed == false) {
+                        if (clickX >= 600 && clickX < 672 && clickY >= 159 && clickY < 231) {
+                            if (Rows[selRow][selSpot].noteV == false) Rows[selRow][selSpot].noteV = true;
+                            else Rows[selRow][selSpot].noteV = false;
+                        }
+                        else if (clickX >= 672 && clickX < 744 && clickY >= 159 && clickY < 231) {
+                            if (Rows[selRow][selSpot].note1 == false) Rows[selRow][selSpot].note1 = true;
+                            else Rows[selRow][selSpot].note1 = false;
+                        }
+                        else if (clickX >= 600 && clickX < 672 && clickY >= 231 && clickY < 303) {
+                            if (Rows[selRow][selSpot].note2 == false) Rows[selRow][selSpot].note2 = true;
+                            else Rows[selRow][selSpot].note2 = false;
+                        }
+                        else if (clickX >= 672 && clickX < 744 && clickY >= 231 && clickY < 303) {
+                            if (Rows[selRow][selSpot].note3 == false) Rows[selRow][selSpot].note3 = true;
+                            else Rows[selRow][selSpot].note3 = false;
+                        }
+                    }
+                    requestAnimationFrame(drawScreen);
+                }
+                else if (clickX >= 24 && clickX < 480 && clickY >= 24 && clickY < 480) {
+                    count = 0;
+                    while (count < 5) {
+                        if (clickY >= 24 + 96 * count && clickY < 96 + 96 * count) {
+                            count2 = 0;
+                            while (count2 < 5) {
+                                if (clickX >= 24 + 96 * count2 && clickX < 96 + 96 * count2) {
+                                    tileSelected();
+                                    count = 5;
+                                    count2 = 5;
+                                }
+                                else if (count2 == 4) {
+                                    if (Rows[selRow][selSpot].selected == true) {
+                                        Rows[selRow][selSpot].selected = false;
+                                        requestAnimationFrame(drawScreen);
+                                    }
+                                    count = 5;
+                                }
+                                count2 += 1;
+                            }
+                        }
+                        else if (count == 4 && Rows[selRow][selSpot].selected == true) {
+                            Rows[selRow][selSpot].selected = false;
+                            requestAnimationFrame(drawScreen);
+                        }
+                        count += 1;
+                    }
+                }
+                else if (Rows[selRow][selSpot].selected == true) {
+                    Rows[selRow][selSpot].selected = false;
+                    requestAnimationFrame(drawScreen);
+                }
+            }
+        }
+    }
+
+</script>
+</html>
